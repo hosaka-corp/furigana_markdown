@@ -1,41 +1,31 @@
 """
-# Furigana/Ruby annotations extension for Markdown.
+# Furigana annotations for Markdown (via <ruby> tags)
 
-This extension provides two simple syntaxes to use furigana in a markdown
-document.
+The HTML5 specification outlines <ruby> tags for Furigana over characters.
+All modern browsers appear to support this. See:
 
-## Usage
-The following construct
+    https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ruby
 
-    [a](-b)
+## Usage in Markdown
+This extension parses patterns of the form:
 
-gets transformed into
+    {KANJI}(FURIGANA)
 
-    <ruby><rb>a</rb><rp>(</rp><rt>b</rt><rp>)</rp></ruby>
+... and emits corresponding HTML string:
 
-If you now write the following text in your markdown document
+    <ruby><rb>KANJI</rb><rp>(</rp><rt>FURIGANA</rt><rp>)</rp></ruby>
 
-    [図](-と)[書](-しょ)[館](-かん)で[本](-ほん)を[読](-よ)みます。
 
-this becomes
+## Usage in Python
 
-    <ruby><rb>図</rb><rp>(</rp><rt>と</rt><rp>)</rp></ruby><ruby><rb>書</rb><rp>(</rp><rt>しょ</rt><rp>)</rp></ruby>
-    <ruby><rb>館</rb><rp>(</rp><rt>かん</rt><rp>)</rp></ruby>で<ruby><rb>本</rb><rp>(</rp><rt>ほん</rt><rp>)</rp></ruby>
-    を<ruby><rb>読</rb><rp>(</rp><rt>よ</rt><rp>)</rp></ruby>みます。
+    #!/usr/bin/python
+    import markdown
+    from furigana import FuriganaExtension
 
-If your Japanese IME produces fullwidth parentheses you can also use this syntax
+    text = 'The {五}(ご){段}(だん){動}(どう){詞}(し) (Godan verbs) are ...'
+    html = markdown.markdown(text, extensions=[FuriganaExtension()])
+    ...
 
-    私（わたし）
-
-The first character has to be a kanji and the characters in the fullwidth
-parentheses have to be hiragana. You can then write the sentence from above
-like this
-
-    図（と）書（しょ）館（かん）で本（ほん）を読（よ）みます。
-
-## Installation
-Just copy the script into your python markdown extension directory, eg.
-`/usr/lib/python3/dist-packages/markdown/extensions/`
 
 ## License
 furigana_markdown is licensed under the MIT license.
@@ -45,15 +35,13 @@ import markdown
 from markdown.inlinepatterns import Pattern
 from markdown.util import etree
 
-RUBY1_RE = r'(\[)(.)\]\(\-(.+?)\)'
-RUBY2_RE = r'()([\u4e00-\u9faf])（([\u3040-\u3096]+?)）'
+# Expects to parse patterns of the form '{kanji}(furigana)'
+RUBY1_RE = r'(\{)(.)\}\((.+?)\)'
 
 class FuriganaExtension(markdown.Extension):
     def extendMarkdown(self, md, md_globals):
         ruby1 = RubyPattern(RUBY1_RE)
         md.inlinePatterns.add('ruby1', ruby1, '<link')
-        ruby2 = RubyPattern(RUBY2_RE)
-        md.inlinePatterns.add('ruby2', ruby2, '<link')
 
 class RubyPattern(Pattern):
     def handleMatch(self, m):
